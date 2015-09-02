@@ -64,8 +64,8 @@ We have 3 caching strategies:
 
 
     # Setup repo
-    go get github.com/cloudfoundry-community/firehose-to-syslog
-    cd $GOPATH/src/github.com/cloudfoundry-community/firehose-to-syslog
+    go get github.com/eljuanchosf/firehose-to-syslog
+    cd $GOPATH/src/github.com/eljuanchosf/firehose-to-syslog
 
     # Test
 	ginkgo -r .
