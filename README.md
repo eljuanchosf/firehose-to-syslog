@@ -40,8 +40,9 @@ Flags:
   --version           Show application version.
   --mode-prof         Enable profiling mode, one of [cpu, mem, block]
   --path-prof         Set the Path to write Profiling file
-	--filters=FILTERS   Pipe seperated filtering for messages. Possible keys: org_name, org_id, space_name, space_id, app_name, app_id. Values are comma seperated. If set, works as a
-										  whitelist filter. Example: --filters="org_name:org1,org2|space_id:asff-12ffa,1122-dbfa-aaaa|app_name:app1"
+  --filters=FILTERS   Pipe seperated filtering for messages. Possible keys: org_name, org_id, space_name,
+                      space_id, app_name, app_id. Values are comma seperated. If set, works as a whitelist filter.
+                      Example: --filters="org_name:org1,org2|space_id:asff-12ffa,1122-dbfa-aaaa|app_name:app1"
 
 ```
 
