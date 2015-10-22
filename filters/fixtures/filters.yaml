@@ -1,0 +1,17 @@
+orgs:
+  cf_field_name: "cf_org_name"
+  filters:
+    - name: org1
+      type: exclude
+spaces:
+  cf_field_name: "cf_space_name"
+  filters:
+    - name: space1
+      type: include
+    - name: space2
+      type: exclude
+apps:
+  cf_field_name: "cf_app_name"
+  filters:
+    - name: space1
+      type: include
