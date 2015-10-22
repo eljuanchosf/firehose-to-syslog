@@ -2,11 +2,14 @@ package events
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/eljuanchosf/firehose-to-syslog/caching"
-	log "github.com/eljuanchosf/firehose-to-syslog/logging"
-	"github.com/cloudfoundry/sonde-go/events"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/cloudfoundry/sonde-go/events"
+	"github.com/eljuanchosf/firehose-to-syslog/caching"
+	"github.com/eljuanchosf/firehose-to-syslog/filters"
+	log "github.com/eljuanchosf/firehose-to-syslog/logging"
+	"github.com/garyburd/redigo/redis"
 )
 
 type Event struct {
@@ -16,8 +19,10 @@ type Event struct {
 }
 
 var selectedEvents map[string]bool
+var redisConn redis.Conn
+var redisHash = "LogQuota"
 
-func RouteEvents(in chan *events.Envelope, extraFields map[string]string, filters map[string][]string) {
+func RouteEvents(in chan *events.Envelope, extraFields map[string]string, filters filters.LogFilters) {
 	for msg := range in {
 		routeEvent(msg, extraFields, filters)
 	}
@@ -27,7 +32,7 @@ func GetSelectedEvents() map[string]bool {
 	return selectedEvents
 }
 
-func routeEvent(msg *events.Envelope, extraFields map[string]string, filters map[string][]string) {
+func routeEvent(msg *events.Envelope, extraFields map[string]string, filters filters.LogFilters) {
 
 	eventType := msg.GetEventType()
 
@@ -56,24 +61,51 @@ func routeEvent(msg *events.Envelope, extraFields map[string]string, filters map
 		event.AnnotateWithMetaData(extraFields)
 
 		if event.ApplyFilters(filters) {
+			var orgId string
+			orgId = event.Fields["cf_org_id"].(string)
+			orgEnabledKey := orgId + ":enabled"
+			orgEnabled, _ := redisConn.Do("HGET", redisHash, orgEnabledKey)
+			if orgEnabled == nil {
+				orgEnabled = true
+			}
+			if orgEnabled {
+				value, err := redisConn.Do("HINCRBY", redisHash, orgId, len(event.Msg))
+				if err != nil || value == nil {
+					panic("Redis server could not be contacted!")
+				}
+			}
 			event.ShipEvent()
 		}
 	}
 }
 
-func (e *Event) ApplyFilters(filters map[string][]string) bool {
+func (e *Event) ApplyFilters(filters filters.LogFilters) bool {
+	ship := e.ApplyFilter(filters.Orgs)
+	ship = ship && e.ApplyFilter(filters.Spaces)
+	ship = ship && e.ApplyFilter(filters.Apps)
+	return ship
+}
+
+func (e *Event) ApplyFilter(filterDefinition filters.CFEntity) bool {
 	ship := true
-	if filters != nil {
-		ship = false
-		for fieldName, values := range filters {
-			for _, v := range values {
-				if e.Fields[fieldName] == v {
-					ship = true
-				}
+	cfFieldName := filterDefinition.CFFieldName
+	for _, filter := range filterDefinition.Filters {
+		switch filter.Type {
+		case "include":
+			if e.Fields[cfFieldName] == filter.Name {
+				ship = true
+			}
+		case "exclude":
+			if e.Fields[cfFieldName] == filter.Name {
+				ship = false
 			}
 		}
 	}
 	return ship
+}
+
+func (e *Event) SetupRedisClient(redisConnection redis.Conn) {
+	redisConn = redisConnection
 }
 
 func SetupEventRouting(wantedEvents string) error {

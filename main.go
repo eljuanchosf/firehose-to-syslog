@@ -2,19 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/boltdb/bolt"
-	"github.com/eljuanchosf/firehose-to-syslog/caching"
-	"github.com/eljuanchosf/firehose-to-syslog/events"
-	"github.com/eljuanchosf/firehose-to-syslog/extrafields"
-	"github.com/eljuanchosf/firehose-to-syslog/firehose"
-	"github.com/eljuanchosf/firehose-to-syslog/logging"
-	"github.com/eljuanchosf/firehose-to-syslog/filters"
-	"github.com/cloudfoundry-community/go-cfclient"
-	"github.com/pkg/profile"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
 	"time"
+
+	"github.com/boltdb/bolt"
+	"github.com/cloudfoundry-community/go-cfclient"
+	"github.com/eljuanchosf/firehose-to-syslog/caching"
+	"github.com/eljuanchosf/firehose-to-syslog/events"
+	"github.com/eljuanchosf/firehose-to-syslog/extrafields"
+	"github.com/eljuanchosf/firehose-to-syslog/filters"
+	"github.com/eljuanchosf/firehose-to-syslog/firehose"
+	"github.com/eljuanchosf/firehose-to-syslog/logging"
+	"github.com/pkg/profile"
+	"github.com/soveran/redisurl"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
@@ -32,7 +34,8 @@ var (
 	extraFields       = kingpin.Flag("extra-fields", "Extra fields you want to annotate your events with, example: --extra-fields=env:dev,something:other ").Default("").String()
 	modeProf          = kingpin.Flag("mode-prof", "Enable profiling mode, one of [cpu, mem, block]").Default("").String()
 	pathProf          = kingpin.Flag("path-prof", "Set the Path to write profiling file").Default("").String()
-	customFilters     = kingpin.Flag("filters", "Pipe seperated whitelist filtering for messages. Possible keys: org_name, org_id, space_name, space_id, app_name, app_id. Values are comma seperated. Example: --filters=\"org_name:org1,org2|space_id:asff-12ffa,1122-dbfa-aaaa|app_name:app1\"").Default("").String()
+	filterPath        = kingpin.Flag("filter-path", "Set the Path to get the filters configurations").Default(".").String()
+	redisUrl          = kingpin.Flag("redis-url", "Set the Path to get the filters configurations").Default("redis://localhost:6379").String()
 )
 
 const (
@@ -115,11 +118,18 @@ func main() {
 	}
 
 	// Parse filters
-	filtersToApply, err := filters.ParseFilters(*customFilters);
+	filtersToApply := filters.GetFilters(*filterPath)
 	if err != nil {
-	  log.Fatal("Error parsing filters: ", err)
-	  os.Exit(1)
+		log.Fatal("Error parsing filters: ", err)
+		os.Exit(1)
 	}
+
+	// Connect to redis
+	redisConn, err := redisurl.ConnectToURL(*redisUrl)
+	if err != nil {
+		panic("Can't connect to Redis")
+	}
+	events.SetupRedisClient(redisConn)
 
 	if logging.Connect() || *debug {
 
