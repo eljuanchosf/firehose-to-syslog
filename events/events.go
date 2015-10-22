@@ -64,10 +64,7 @@ func routeEvent(msg *events.Envelope, extraFields map[string]string, filters fil
 			var orgId string
 			orgId = event.Fields["cf_org_id"].(string)
 			orgEnabledKey := orgId + ":enabled"
-			orgEnabled, _ := redisConn.Do("HGET", redisHash, orgEnabledKey)
-			if orgEnabled == nil {
-				orgEnabled = true
-			}
+			orgEnabled, _ := redis.Bool(redisConn.Do("HGET", redisHash, orgEnabledKey))
 			if orgEnabled {
 				value, err := redisConn.Do("HINCRBY", redisHash, orgId, len(event.Msg))
 				if err != nil || value == nil {
