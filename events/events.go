@@ -61,17 +61,21 @@ func routeEvent(msg *events.Envelope, extraFields map[string]string, filters fil
 		event.AnnotateWithMetaData(extraFields)
 
 		if event.ApplyFilters(filters) {
-			var orgId string
-			orgId = event.Fields["cf_org_id"].(string)
+			// Compose the key to be used in Redis
+			orgId := event.Fields["cf_org_id"].(string)
 			orgEnabledKey := orgId + ":enabled"
+
+			// Get the "enabled" flag to know if this organization will keep sending logs to ELK
 			orgEnabled, _ := redis.Bool(redisConn.Do("HGET", redisHash, orgEnabledKey))
 			if orgEnabled {
+				// Increment the value of the organization key to add the amount of bytes of the log
 				value, err := redisConn.Do("HINCRBY", redisHash, orgId, len(event.Msg))
 				if err != nil || value == nil {
 					panic("Redis server could not be contacted!")
 				}
+				// Send the event (log message)
+				event.ShipEvent()
 			}
-			event.ShipEvent()
 		}
 	}
 }
