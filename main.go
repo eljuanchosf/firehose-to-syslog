@@ -124,6 +124,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Ticker Pooling the Filters file every 60 seconds
+	filterPolling := time.NewTicker(time.Second * 60)
+	go func() {
+		for range filterPolling.C {
+			filtersToApply = filters.GetFilters(*filterPath)
+		}
+	}()
+
 	// Connect to redis
 	redisConn, err := redisurl.ConnectToURL(*redisUrl)
 	if err != nil {

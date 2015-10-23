@@ -105,7 +105,7 @@ func (e *Event) ApplyFilter(filterDefinition filters.CFEntity) bool {
 	return ship
 }
 
-func (e *Event) SetupRedisClient(redisConnection redis.Conn) {
+func SetupRedisClient(redisConnection redis.Conn) {
 	redisConn = redisConnection
 }
 
@@ -142,7 +142,6 @@ func GetListAuthorizedEventEvents() (authorizedEvents string) {
 		arrEvents = append(arrEvents, listEvent)
 	}
 	return strings.Join(arrEvents, ", ")
-
 }
 
 func getAppInfo(appGuid string) caching.App {

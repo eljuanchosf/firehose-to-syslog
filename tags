@@ -1762,7 +1762,7 @@ SetWriteDeadline	Godeps/_workspace/src/github.com/gorilla/websocket/conn_test.go
 Settings	Godeps/_workspace/src/gopkg.in/alecthomas/kingpin.v2/parsers.go	/^type Settings interface {$/;"	t
 SetupEventRouting	events/events.go	/^func SetupEventRouting(wantedEvents string) error {$/;"	f
 SetupLogging	logging/logging.go	/^func SetupLogging(syslogSvr string, debug bool) {$/;"	f
-SetupRedisClient	events/events.go	/^func (e *Event) SetupRedisClient(redisConnection redis.Conn) {$/;"	f
+SetupRedisClient	events/events.go	/^func SetupRedisClient(redisConnection redis.Conn) {$/;"	f
 Shift	Godeps/_workspace/src/github.com/pquerna/ffjson/fflib/v1/decimal.go	/^func (a *decimal) Shift(k int) {$/;"	f
 Shift	Godeps/_workspace/src/github.com/pquerna/ffjson/fflib/v1/internal/atof.go	/^func (a *decimal) Shift(k int) {$/;"	f
 ShipEvent	events/events.go	/^func (e Event) ShipEvent() {$/;"	f
